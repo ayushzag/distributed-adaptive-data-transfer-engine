@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adaptive-data-transfer-engine"
+version = "1.0.0"
+description = "Adaptive, parallel TCP file transfer with resume and SHA-256 verification"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Adaptive Data Transfer Engine contributors"}]
+dependencies = [
+  "fastapi>=0.110,<1.0",
+  "pydantic>=2.0,<3.0",
+  "uvicorn[standard]>=0.27,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0,<9.0",
+  "pytest-cov>=5.0,<7.0",
+  "httpx>=0.27,<1.0",
+]
+
+[project.scripts]
+adaptive-send = "transfer_engine.sender:main"
+adaptive-receive = "transfer_engine.receiver:main"
+transfer-control-plane = "control_plane.app:main"
+
+[tool.setuptools.packages.find]
+include = ["transfer_engine*", "control_plane*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.coverage.run]
+branch = true
+source = ["transfer_engine", "control_plane"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: transfer-data
+  namespace: adaptive-transfer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transfer-receiver
+  namespace: adaptive-transfer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transfer-receiver
+  template:
+    metadata:
+      labels:
+        app: transfer-receiver
+    spec:
+      containers:
+        - name: receiver
+          image: adaptive-data-transfer-engine:1.0.0
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "transfer_engine.receiver"]
+          args: ["--host", "0.0.0.0", "--port", "5050", "--output-dir", "/data"]
+          ports:
+            - name: tcp-transfer
+              containerPort: 5050
+          readinessProbe:
+            tcpSocket:
+              port: 5050
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 5050
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: transfer-data
+              mountPath: /data
+      volumes:
+        - name: transfer-data
+          persistentVolumeClaim:
+            claimName: transfer-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transfer-receiver
+  namespace: adaptive-transfer
+spec:
+  selector:
+    app: transfer-receiver
+  ports:
+    - name: tcp-transfer
+      port: 5050
+      targetPort: 5050
+  type: ClusterIP

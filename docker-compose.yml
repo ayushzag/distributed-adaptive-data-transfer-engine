@@ -1,0 +1,20 @@
+services:
+  receiver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adaptive-transfer-receiver
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./received:/data
+    restart: unless-stopped
+
+  control-plane:
+    build:
+      context: .
+      dockerfile: Dockerfile.control-plane
+    container_name: adaptive-transfer-control-plane
+    ports:
+      - "8000:8000"
+    restart: unless-stopped

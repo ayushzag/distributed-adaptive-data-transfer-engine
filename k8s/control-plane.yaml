@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transfer-control-plane
+  namespace: adaptive-transfer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transfer-control-plane
+  template:
+    metadata:
+      labels:
+        app: transfer-control-plane
+    spec:
+      containers:
+        - name: control-plane
+          image: adaptive-transfer-control-plane:1.0.0
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "control_plane.app"]
+          args: ["--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - name: http-api
+              containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transfer-control-plane
+  namespace: adaptive-transfer
+spec:
+  selector:
+    app: transfer-control-plane
+  ports:
+    - name: http-api
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
